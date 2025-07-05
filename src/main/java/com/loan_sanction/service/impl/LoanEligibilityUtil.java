@@ -4,12 +4,14 @@ import com.loan_sanction.dto.LoanRequestDTO;
 
 public class LoanEligibilityUtil {
 
+    //To calculate maximum sanction loan
     public static double calculateMaxLoan(LoanRequestDTO dto) {
         double monthlyIncome = getMonthlyIncome(dto);
         double multiplier = getMultiplier(dto);
         return monthlyIncome * multiplier;
     }
 
+    //Businessman ITR / 12 months
     public static double getMonthlyIncome(LoanRequestDTO dto) {
         if ((dto.getJobType().equalsIgnoreCase("Businessman") || dto.getJobType().equalsIgnoreCase("Housewife"))
                 && dto.getAnnualItr() > 0) {
@@ -18,17 +20,20 @@ public class LoanEligibilityUtil {
         return dto.getMonthlyIncome();
     }
 
+    //Monthly income EMI not exceed 50%
     public static boolean foirCheck(double requestedAmount, int tenureMonths, double monthlyIncome) {
         double simpleEmi = requestedAmount / tenureMonths;
         double maxEmi = monthlyIncome * 0.5;
         return simpleEmi <= maxEmi;
     }
 
+    //Applicant age not exceed more than 50
     public static boolean tenureAgeCheck(int currentAge, int tenureMonths) {
         int ageAtEnd = currentAge + (tenureMonths / 12);
         return ageAtEnd <= 50;
     }
 
+    //Assingn Multiplier to different domain
     private static double getMultiplier(LoanRequestDTO dto) {
         int age = dto.getAge();
         int creditScore = dto.getCreditScore();

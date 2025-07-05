@@ -2,8 +2,10 @@ package com.loan_sanction.service.impl;
 
 import com.loan_sanction.dto.LoanRequestDTO;
 import com.loan_sanction.entities.LoanApplication;
+import com.loan_sanction.exception.LoanProcessingException;
 import com.loan_sanction.repository.LoanApplicationRepository;
 import com.loan_sanction.service.LoanService;
+import com.loan_sanction.util.LoanConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -26,22 +28,22 @@ public class LoanServiceImpl implements LoanService {
     public LoanApplication processLoan(LoanRequestDTO dto) {
         double maxLoan = calculateMaxLoan(dto);
 
-        if (dto.getRequestedAmount() < 50000 || dto.getRequestedAmount() > 4000000) {
-            throw new RuntimeException("Loan amount must be between ₹50,000 and ₹40,00,000");
+        if (dto.getRequestedAmount() < LoanConstants.MIN_LOAN_AMOUNT || dto.getRequestedAmount() > LoanConstants.MAX_LOAN_AMOUNT) {
+            throw new LoanProcessingException(LoanConstants.MSG_LOAN_AMOUNT_LIMIT);
         }
 
         if (dto.getRequestedAmount() > maxLoan) {
-            throw new RuntimeException("Exceeds your maximum eligible loan: ₹" + maxLoan);
+            throw new LoanProcessingException(String.format(LoanConstants.MSG_EXCEEDS_MAX_ELIGIBILITY, maxLoan));
         }
 
         double monthlyIncome = LoanEligibilityUtil.getMonthlyIncome(dto);
 
         if (!LoanEligibilityUtil.foirCheck(dto.getRequestedAmount(), dto.getTenureMonths(), monthlyIncome)) {
-            throw new RuntimeException("EMI exceeds 50% of monthly income.");
+            throw new LoanProcessingException(LoanConstants.MSG_EMI_EXCEEDS_LIMIT);
         }
 
         if (!LoanEligibilityUtil.tenureAgeCheck(dto.getAge(), dto.getTenureMonths())) {
-            throw new RuntimeException("Loan tenure exceeds age 50 limit.");
+            throw new LoanProcessingException(LoanConstants.MSG_TENURE_AGE_LIMIT);
         }
 
         LoanApplication loan = new LoanApplication();
@@ -60,8 +62,6 @@ public class LoanServiceImpl implements LoanService {
     @Override
     public LoanApplication getLoanDetails(Long id) {
         return repo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Loan application not found for ID: " + id));
+                .orElseThrow(() -> new RuntimeException(LoanConstants.MSG_LOAN_NOT_FOUND + id));
     }
-
-
 }
